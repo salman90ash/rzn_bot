@@ -19,9 +19,16 @@ class FSMClient(StatesGroup):
     date = State()
 
 
-async def post_create_task(data):
+async def create_user(data):
     async with aiohttp.ClientSession() as session:
-        async with session.post('http://127.0.0.1:8000/tg/', data=data) as resp:
+        async with session.post('http://127.0.0.1:8000/tg/create_user/', data=data) as resp:
+            # print(resp.status)
+            print(await resp.text())
+
+
+async def create_task(data):
+    async with aiohttp.ClientSession() as session:
+        async with session.post('http://127.0.0.1:8000/tg/create_task/', data=data) as resp:
             # print(resp.status)
             print(await resp.text())
 
@@ -60,7 +67,7 @@ start_message = f"Добро пожаловать!\n" \
 async def start(message: types.Message):
     await message.answer(text=start_message, parse_mode='Markdown')
     user = {
-        "id": message.from_user.id
+        "user_id": message.from_user.id
     }
     if message.from_user.username is not None:
         user['username'] = message.from_user.username
@@ -68,7 +75,8 @@ async def start(message: types.Message):
         user['first_name'] = message.from_user.first_name
     if message.from_user.last_name is not None:
         user['last_name'] = message.from_user.last_name
-    print(user)
+    # print(user)
+    await create_user(user)
     # print(message.as_json())
     await message.delete()
 
@@ -142,8 +150,8 @@ async def add_date(message: types.Message, state: FSMContext):
                                     parse_mode='HTML')
     await FSMClient.next()
     await message.delete()
-    print(data.as_dict())
-    # await post_create_task(data.as_dict())
+    # print(data.as_dict())
+    await create_task(data.as_dict())
     await state.finish()
 
 
