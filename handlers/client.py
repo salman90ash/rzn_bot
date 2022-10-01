@@ -19,6 +19,14 @@ class FSMClient(StatesGroup):
     date = State()
 
 
+async def get_user(tg_chat_id):
+    params = {'tg_chat_id': tg_chat_id}
+    async with aiohttp.ClientSession() as session:
+        async with session.get('http://127.0.0.1:8000/tg/users/' + str(tg_chat_id) + "/") as resp:
+            # print(resp.status)
+            return await resp.text()
+
+
 async def create_user(data):
     async with aiohttp.ClientSession() as session:
         async with session.post('http://127.0.0.1:8000/tg/create_user/', data=data) as resp:
@@ -67,18 +75,24 @@ start_message = f"Добро пожаловать!\n" \
 async def start(message: types.Message):
     await message.answer(text=start_message, parse_mode='Markdown')
     user = {
-        "user_id": message.from_user.id
+        "tg_chat_id": message.from_user.id
     }
     if message.from_user.username is not None:
-        user['username'] = message.from_user.username
+        user['tg_username'] = message.from_user.username
     if message.from_user.first_name is not None:
-        user['first_name'] = message.from_user.first_name
+        user['tg_first_name'] = message.from_user.first_name
     if message.from_user.last_name is not None:
-        user['last_name'] = message.from_user.last_name
+        user['tg_last_name'] = message.from_user.last_name
     # print(user)
-    await create_user(user)
+    res = await get_user(user["tg_chat_id"])
+    if res is None:
+        print("None")
+        # await create_user(user)
+    else:
+        print(res)
+    # await create_user(user)
     # print(message.as_json())
-    await message.delete()
+    # await message.delete()
 
 
 async def add_task(message: types.Message):
