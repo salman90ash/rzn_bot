@@ -38,7 +38,9 @@ async def create_task(data):
     async with aiohttp.ClientSession() as session:
         async with session.post('http://127.0.0.1:8000/tg/create_task/', data=data) as resp:
             # print(resp.status)
-            print(await resp.text())
+            answer = await resp.text()
+            # print(answer)
+            return answer
 
 
 def get_template_message(type_id, name_md='???', number='???', date='???') -> str:
@@ -83,16 +85,14 @@ async def start(message: types.Message):
         user['tg_first_name'] = message.from_user.first_name
     if message.from_user.last_name is not None:
         user['tg_last_name'] = message.from_user.last_name
-    # print(user)
+
     res = await get_user(user["tg_chat_id"])
-    if res is None:
-        print("None")
-        # await create_user(user)
+    if res:
+        await create_user(user)
     else:
         print(res)
-    # await create_user(user)
-    # print(message.as_json())
-    # await message.delete()
+
+    await message.delete()
 
 
 async def add_task(message: types.Message):
@@ -106,7 +106,7 @@ async def callback_type(callback: types.CallbackQuery, state: FSMContext):
     type_id = callback.data[callback.data.find('_') + 1:]
     async with state.proxy() as data:
         data['message_id'] = callback.message.message_id
-        data['user_id'] = callback.message.from_user.id
+        data['tg_chat_id'] = callback.from_user.id
         data['type'] = type_id
     await callback.answer()
     await callback.message.edit_text(text=get_template_message(type_id=type_id),
@@ -163,10 +163,11 @@ async def add_date(message: types.Message, state: FSMContext):
                                                               date=data['date']),
                                     parse_mode='HTML')
     await FSMClient.next()
-    await message.delete()
     # print(data.as_dict())
     await create_task(data.as_dict())
+    # print(answer)
     await state.finish()
+    await message.delete()
 
 
 def register_handlers_client(dp: Dispatcher):
