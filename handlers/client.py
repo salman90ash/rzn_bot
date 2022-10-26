@@ -1,3 +1,5 @@
+import json
+
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
@@ -164,15 +166,42 @@ async def add_date(message: types.Message, state: FSMContext):
                                     parse_mode='HTML')
     await FSMClient.next()
     # print(data.as_dict())
+    await message.delete()
     await create_task(data.as_dict())
     # print(answer)
     await state.finish()
-    await message.delete()
+
+
+async def updates(message: types.Message):
+    async with aiohttp.ClientSession() as session:
+        async with session.get('http://127.0.0.1:8000/tg/tg_send_updates/') as resp:
+            answer = await resp.text()
+            msgs = json.loads(answer)
+            for msg in msgs:
+                chat_id = msg['chat_id']
+                title = msg['title']
+                task_type = msg['type']
+                notice = msg['notice']
+                completed = msg['completed']
+                url = msg['url']
+                if completed:
+                    msg_text = f"<strong>{title} ({task_type})</strong>\n" \
+                               f"<i>{notice}</i>\n" \
+                               f"<i>Задача завершена.</i>\n" \
+                               f"<i>Задача удалена из списка.</i>\n" \
+                               f"<a href=\"{url}\">Посмотреть на сайте РЗН</a>"
+                    await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
+                else:
+                    msg_text = f"<strong>{title} ({task_type})</strong>\n" \
+                               f"<i>{notice}</i>\n" \
+                               f"<a href=\"{url}\">Посмотреть на сайте РЗН</a>"
+                    await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
 
 
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(add_task, commands=['add'], state=None)
+    dp.register_message_handler(updates, commands=['updates'])
     dp.register_callback_query_handler(callback_type, lambda callback_query: callback_query.data.startswith('type_'),
                                        state=FSMClient.type)
     dp.register_message_handler(add_name_md, state=FSMClient.name_md)
