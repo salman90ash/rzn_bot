@@ -10,3 +10,12 @@ ikb_type.add(btn_cansel)
 
 ikb_cansel = InlineKeyboardMarkup(row_width=1)
 ikb_cansel.add(btn_cansel)
+
+
+def generate_ikb_list_tasks(tasks):
+    ikb_tasks = InlineKeyboardMarkup(row_width=1)
+    for task in tasks:
+        ikb_tasks.add(InlineKeyboardButton(text=task['title'], url=task['url']))
+    return ikb_tasks
+
+

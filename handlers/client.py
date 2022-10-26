@@ -5,7 +5,7 @@ from bot import bot
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from keyboards.ikb import ikb_type, ikb_cansel
+from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks
 # from rzn.functions.actions import get_type_title, add_task
 # from users.models import CustomUser
 import asyncio
@@ -198,10 +198,25 @@ async def updates(message: types.Message):
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
 
 
+async def list_tasks(message: types.Message):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://127.0.0.1:8000/tg/list_tasks/{message.from_user.id}/") as resp:
+            answer = await resp.text()
+            data = json.loads(answer)
+            print(data)
+            ikb_task = generate_ikb_list_tasks(data)
+            amount_tasks = len(data)
+            await message.answer(text=f"Список задач ({amount_tasks} шт.):",
+                                 parse_mode="HTML",
+                                 reply_markup=ikb_task)
+            await message.delete()
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(add_task, commands=['add'], state=None)
     dp.register_message_handler(updates, commands=['updates'])
+    dp.register_message_handler(list_tasks, commands=['list'])
     dp.register_callback_query_handler(callback_type, lambda callback_query: callback_query.data.startswith('type_'),
                                        state=FSMClient.type)
     dp.register_message_handler(add_name_md, state=FSMClient.name_md)
