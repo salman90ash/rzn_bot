@@ -5,20 +5,28 @@ from bot import bot
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks
+from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks, generate_ikb_list_tasks_delete, ikb_yes_no
 # from rzn.functions.actions import get_type_title, add_task
 # from users.models import CustomUser
 import asyncio
 import aiohttp
 
 
-class FSMClient(StatesGroup):
+class FSMClientAddTask(StatesGroup):
     type = State()
     user_id = State()
     message_id = State()
     name_md = State()
     number = State()
     date = State()
+
+
+class FSMClientDelTask(StatesGroup):
+    user_id = State()
+    message_id = State()
+    task_id = State()
+    task_title = State()
+    confirm = State()
 
 
 async def get_user(tg_chat_id):
@@ -45,7 +53,7 @@ async def create_task(data):
             return answer
 
 
-def get_template_message(type_id, name_md='???', number='???', date='???') -> str:
+def get_msg_create_task(type_id, name_md='???', number='???', date='???') -> str:
     global RZN_TYPES
     type_id = int(type_id)
     type_title = get_type_title(type_id)
@@ -64,6 +72,19 @@ def get_template_message(type_id, name_md='???', number='???', date='???') -> st
     template_message = f"{caption_message}" \
                        f"Тип: {type_title}\n" \
                        f"Наименование МИ: {name_md}\n" \
+                       f"{type_number_title}: {number}\n" \
+                       f"Дата: {date}"
+    return template_message
+
+
+def get_msg_delete_task(type_id, type_title, title, number, date) -> str:
+    type_number_title = 'Вх. номер'
+    if type_id == 6:
+        type_number_title = 'Исх. номер'
+    caption_message = f"❌ <b>Задача удалена</b>\n\n"
+    template_message = f"{caption_message}" \
+                       f"Тип: {type_title}\n" \
+                       f"Наименование МИ: {title}\n" \
                        f"{type_number_title}: {number}\n" \
                        f"Дата: {date}"
     return template_message
@@ -101,7 +122,7 @@ async def add_task(message: types.Message):
     await bot.send_message(chat_id=message.from_user.id, text='Выберите тип задачи', parse_mode="HTML",
                            reply_markup=ikb_type)
     await message.delete()
-    await FSMClient.type.set()
+    await FSMClientAddTask.type.set()
 
 
 async def callback_type(callback: types.CallbackQuery, state: FSMContext):
@@ -111,12 +132,12 @@ async def callback_type(callback: types.CallbackQuery, state: FSMContext):
         data['tg_chat_id'] = callback.from_user.id
         data['type'] = type_id
     await callback.answer()
-    await callback.message.edit_text(text=get_template_message(type_id=type_id),
+    await callback.message.edit_text(text=get_msg_create_task(type_id=type_id),
                                      reply_markup=ikb_cansel,
                                      parse_mode='HTML')
-    await FSMClient.next()
-    await FSMClient.next()
-    await FSMClient.next()
+    await FSMClientAddTask.next()
+    await FSMClientAddTask.next()
+    await FSMClientAddTask.next()
 
 
 async def callback_cansel(callback: types.CallbackQuery, state: FSMContext):
@@ -132,11 +153,11 @@ async def add_name_md(message: types.Message, state: FSMContext):
         data['name_md'] = message.text
         await bot.edit_message_text(message_id=data['message_id'],
                                     chat_id=message.from_user.id,
-                                    text=get_template_message(type_id=data['type'],
-                                                              name_md=data['name_md']),
+                                    text=get_msg_create_task(type_id=data['type'],
+                                                             name_md=data['name_md']),
                                     reply_markup=ikb_cansel,
                                     parse_mode='HTML')
-    await FSMClient.next()
+    await FSMClientAddTask.next()
     await message.delete()
 
 
@@ -145,12 +166,12 @@ async def add_number(message: types.Message, state: FSMContext):
         data['number'] = message.text
         await bot.edit_message_text(message_id=data['message_id'],
                                     chat_id=message.from_user.id,
-                                    text=get_template_message(type_id=data['type'],
-                                                              name_md=data['name_md'],
-                                                              number=data['number']),
+                                    text=get_msg_create_task(type_id=data['type'],
+                                                             name_md=data['name_md'],
+                                                             number=data['number']),
                                     reply_markup=ikb_cansel,
                                     parse_mode='HTML')
-    await FSMClient.next()
+    await FSMClientAddTask.next()
     await message.delete()
 
 
@@ -159,12 +180,12 @@ async def add_date(message: types.Message, state: FSMContext):
         data['date'] = message.text
         await bot.edit_message_text(message_id=data['message_id'],
                                     chat_id=message.from_user.id,
-                                    text=get_template_message(type_id=data['type'],
-                                                              name_md=data['name_md'],
-                                                              number=data['number'],
-                                                              date=data['date']),
+                                    text=get_msg_create_task(type_id=data['type'],
+                                                             name_md=data['name_md'],
+                                                             number=data['number'],
+                                                             date=data['date']),
                                     parse_mode='HTML')
-    await FSMClient.next()
+    await FSMClientAddTask.next()
     # print(data.as_dict())
     await message.delete()
     await create_task(data.as_dict())
@@ -203,7 +224,7 @@ async def list_tasks(message: types.Message):
         async with session.get(f"http://127.0.0.1:8000/tg/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
-            print(data)
+            # print(data)
             ikb_task = generate_ikb_list_tasks(data)
             amount_tasks = len(data)
             await message.answer(text=f"Список задач ({amount_tasks} шт.):",
@@ -212,15 +233,88 @@ async def list_tasks(message: types.Message):
             await message.delete()
 
 
+async def list_delete(message: types.Message, state: FSMContext):
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://127.0.0.1:8000/tg/list_tasks/{message.from_user.id}/") as resp:
+            answer = await resp.text()
+            data = json.loads(answer)
+            ikb_task = generate_ikb_list_tasks_delete(data)
+            amount_tasks = len(data)
+            await message.answer(text=f"Список задач ({amount_tasks} шт.):",
+                                 parse_mode="HTML",
+                                 reply_markup=ikb_task)
+            await message.delete()
+            async with state.proxy() as data:
+                data['user_id'] = message.from_user.id
+                data['message_id'] = message.message_id
+            await FSMClientDelTask.user_id.set()
+
+
+async def callback_choice_task_delete(callback: types.CallbackQuery, state: FSMContext):
+    task_id = callback.data[callback.data.find('_') + 1:]
+    title = ''
+    await callback.answer()
+    tasks = callback.message.reply_markup.inline_keyboard
+    for task in tasks:
+        if callback.data == task[0]['callback_data']:
+            title = task[0]['text']
+
+    await callback.message.edit_text(text=f'Вы уверены, что хотите удалить?\n\n'
+                                          f'<strong>{title}</strong>',
+                                     reply_markup=ikb_yes_no,
+                                     parse_mode='HTML')
+
+    async with state.proxy() as data:
+        data['task_id'] = task_id
+        data['task_title'] = title
+    await FSMClientDelTask.next()
+    await FSMClientDelTask.next()
+    await FSMClientDelTask.next()
+    await FSMClientDelTask.next()
+
+
+async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMContext):
+    confirm = callback.data[callback.data.find('btn_confirm_') + 12:]
+    await callback.answer()
+    async with state.proxy() as data:
+        data['confirm'] = confirm
+        if confirm == 'yes':
+            print(confirm)
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"http://127.0.0.1:8000/tg/del_tasks/{data['task_id']}/") as resp:
+                    answer = await resp.text()
+                    task = json.loads(answer)
+                    await callback.message.edit_text(text=get_msg_delete_task(title=task['title'],
+                                                                              type_id=task['type_id'],
+                                                                              type_title=task['type_title'],
+                                                                              number=task['number'],
+                                                                              date=task['date']
+                                                                              ),
+                                                     parse_mode='HTML')
+        else:
+            print(confirm)
+            await callback.message.delete()
+    await FSMClientDelTask.next()
+    await state.finish()
+
+
 def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(start, commands=['start'])
     dp.register_message_handler(add_task, commands=['add'], state=None)
     dp.register_message_handler(updates, commands=['updates'])
     dp.register_message_handler(list_tasks, commands=['list'])
-    dp.register_callback_query_handler(callback_type, lambda callback_query: callback_query.data.startswith('type_'),
-                                       state=FSMClient.type)
-    dp.register_message_handler(add_name_md, state=FSMClient.name_md)
-    dp.register_message_handler(add_number, state=FSMClient.number)
-    dp.register_message_handler(add_date, state=FSMClient.date)
+    dp.register_message_handler(list_delete, commands=['delete'])
+    dp.register_callback_query_handler(callback_type,
+                                       lambda callback_query: callback_query.data.startswith('type_'),
+                                       state=FSMClientAddTask.type)
+    dp.register_callback_query_handler(callback_choice_task_delete,
+                                       lambda callback_query: callback_query.data.startswith('del_'),
+                                       state=FSMClientDelTask.user_id)
+    dp.register_callback_query_handler(callback_confirm_delete,
+                                       lambda callback_query: callback_query.data.startswith('btn_confirm_'),
+                                       state=FSMClientDelTask.confirm)
+    dp.register_message_handler(add_name_md, state=FSMClientAddTask.name_md)
+    dp.register_message_handler(add_number, state=FSMClientAddTask.number)
+    dp.register_message_handler(add_date, state=FSMClientAddTask.date)
     dp.register_callback_query_handler(callback_cansel, lambda callback_query: callback_query.data == 'btn_cansel',
                                        state='*')
