@@ -54,7 +54,6 @@ async def create_task(data):
 
 
 def get_msg_create_task(type_id, name_md='???', number='???', date='???') -> str:
-    global RZN_TYPES
     type_id = int(type_id)
     type_title = get_type_title(type_id)
     type_number_title = 'Вх. номер'

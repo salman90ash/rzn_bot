@@ -1,8 +1,8 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from config import RZN_TYPES
+from config import RZN_TYPES_add
 
 ikb_type = InlineKeyboardMarkup(row_width=1)
-for btn in RZN_TYPES:
+for btn in RZN_TYPES_add:
     ikb_type.add(InlineKeyboardButton(text=btn[1], callback_data='type_' + str(btn[0])))
 
 btn_cansel = InlineKeyboardButton(text='❗️❗❗️Отмена ❗️❗❗️', callback_data='btn_cansel')
