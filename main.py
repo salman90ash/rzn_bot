@@ -17,8 +17,11 @@ async def time():
 
 
 async def scheduler():
-    schedule.every().day.at("16:56").do(time)
-    schedule.every().day.at("16:56").do(send_msg)
+    schedule.every().day.at("08:00").do(send_msg)
+    schedule.every().day.at("11:00").do(send_msg)
+    schedule.every().day.at("14:00").do(send_msg)
+    schedule.every().day.at("17:00").do(send_msg)
+    schedule.every().day.at("20:00").do(send_msg)
     while True:
         await schedule.run_pending()
         await asyncio.sleep(1)
