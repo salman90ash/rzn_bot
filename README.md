@@ -41,9 +41,14 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 ```
 
-Pапуск службы
+Запуск службы
 ```
 sudo systemctl start rzn_bot.service
+```
+
+Остановить службу
+```
+sudo systemctl stop rzn_bot.service
 ```
 
 Посмотреть статус службы
