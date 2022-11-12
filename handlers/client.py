@@ -1,5 +1,5 @@
 import json
-
+from config import URL
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
@@ -32,21 +32,21 @@ class FSMClientDelTask(StatesGroup):
 async def get_user(tg_chat_id):
     params = {'tg_chat_id': tg_chat_id}
     async with aiohttp.ClientSession() as session:
-        async with session.get('http://127.0.0.1:8000/tg/users/' + str(tg_chat_id) + "/") as resp:
+        async with session.get(f"http://{URL}/tg/users/" + str(tg_chat_id) + "/") as resp:
             # print(resp.status)
             return await resp.text()
 
 
 async def create_user(data):
     async with aiohttp.ClientSession() as session:
-        async with session.post('http://127.0.0.1:8000/tg/create_user/', data=data) as resp:
+        async with session.post(f"http://{URL}/tg/create_user/", data=data) as resp:
             # print(resp.status)
             print(await resp.text())
 
 
 async def create_task(data):
     async with aiohttp.ClientSession() as session:
-        async with session.post('http://127.0.0.1:8000/tg/create_task/', data=data) as resp:
+        async with session.post(f"http://{URL}/tg/create_task/", data=data) as resp:
             # print(resp.status)
             answer = await resp.text()
             # print(answer)
@@ -97,7 +97,6 @@ start_message = f"Добро пожаловать!\n" \
 
 
 async def start(message: types.Message):
-    await message.answer(text=start_message, parse_mode='Markdown')
     user = {
         "tg_chat_id": message.from_user.id
     }
@@ -113,7 +112,7 @@ async def start(message: types.Message):
         await create_user(user)
     else:
         print(res)
-
+    await message.answer(text=start_message, parse_mode='Markdown')
     await message.delete()
 
 
@@ -194,7 +193,9 @@ async def add_date(message: types.Message, state: FSMContext):
 
 async def updates(message: types.Message):
     async with aiohttp.ClientSession() as session:
-        async with session.get('http://127.0.0.1:8000/tg/tg_send_updates/') as resp:
+        async with session.get(f"http://{URL}/tg/update_tasks/") as resp:
+            answer = await resp.text()
+        async with session.get(f"http://{URL}/tg/tg_send_updates/") as resp:
             answer = await resp.text()
             msgs = json.loads(answer)
             for msg in msgs:
@@ -220,7 +221,7 @@ async def updates(message: types.Message):
 
 async def list_tasks(message: types.Message):
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://127.0.0.1:8000/tg/list_tasks/{message.from_user.id}/") as resp:
+        async with session.get(f"http://{URL}/tg/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
             # print(data)
@@ -234,7 +235,7 @@ async def list_tasks(message: types.Message):
 
 async def list_delete(message: types.Message, state: FSMContext):
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://127.0.0.1:8000/tg/list_tasks/{message.from_user.id}/") as resp:
+        async with session.get(f"http://{URL}/tg/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
             ikb_task = generate_ikb_list_tasks_delete(data)
@@ -280,7 +281,7 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
         if confirm == 'yes':
             print(confirm)
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"http://127.0.0.1:8000/tg/del_tasks/{data['task_id']}/") as resp:
+                async with session.get(f"http://{URL}/tg/del_tasks/{data['task_id']}/") as resp:
                     answer = await resp.text()
                     task = json.loads(answer)
                     await callback.message.edit_text(text=get_msg_delete_task(title=task['title'],
