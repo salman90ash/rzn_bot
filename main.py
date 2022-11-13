@@ -7,6 +7,7 @@ from bot import dp
 from handlers import client, common
 import aioschedule as schedule
 from handlers.common import send_msg
+from handlers.client import updates
 
 client.register_handlers_client(dp)
 common.register_handlers_common(dp)
@@ -17,12 +18,12 @@ async def time():
 
 
 async def scheduler():
-    # schedule.every().day.at("08:00").do(send_msg)
-    # schedule.every().day.at("11:00").do(send_msg)
-    # schedule.every().day.at("14:00").do(send_msg)
-    # schedule.every().day.at("17:00").do(send_msg)
-    # schedule.every().day.at("20:00").do(send_msg)
-    schedule.every(15).minutes.do(time)
+    schedule.every().day.at("08:00").do(updates)
+    schedule.every().day.at("11:00").do(updates)
+    schedule.every().day.at("14:00").do(updates)
+    schedule.every().day.at("17:00").do(updates)
+    schedule.every().day.at("20:00").do(updates)
+    # schedule.every(15).minutes.do(time)
     while True:
         await schedule.run_pending()
         await asyncio.sleep(1)
