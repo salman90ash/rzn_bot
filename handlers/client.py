@@ -1,11 +1,15 @@
 import json
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+
 from config import URL
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks, generate_ikb_list_tasks_delete, ikb_yes_no
+from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks, generate_ikb_list_tasks_delete, ikb_yes_no, \
+    ikb_settings
 # from rzn.functions.actions import get_type_title, add_task
 # from users.models import CustomUser
 import asyncio
@@ -292,10 +296,88 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
                                                                               ),
                                                      parse_mode='HTML')
         else:
-            print(confirm)
             await callback.message.delete()
     await FSMClientDelTask.next()
     await state.finish()
+
+
+async def settings(message: types.Message):
+    btn_name = InlineKeyboardButton(text='Наименование', callback_data='btn_settings_name')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_name)
+    await bot.send_message(chat_id=message.from_user.id,
+                           text=f'⚙️ Настройки бота:\n',
+                           parse_mode="HTML",
+                           reply_markup=ikb)
+    await message.delete()
+
+
+async def get_text_settings_name(mode: bool) -> str:
+    if mode:
+        return f'Если выключить опцию, то наименование МИ будет в следующем формате.\n\n' \
+               f'<i>Например:</i>\nКатетеры (РУ)'
+    return f'Если включить опцию, то наименование МИ будет в следующем формате.\n\n' \
+           f'<i>Например:</i>\nКатетеры (РУ | Вх. № 12345 от 01.01.2021)'
+
+
+async def callback_settings_name(callback: types.CallbackQuery):
+    tg_chat_id = callback.from_user.id
+    text = ''
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/") as resp:
+            response = json.loads(await resp.text())
+            result: str = response['task_title_detail']
+            btn_name = InlineKeyboardButton(text='Вкл.', callback_data='btn_settings_on')
+            if result.lower() == 'true':
+                btn_name.text = 'Выкл.'
+                btn_name.callback_data = 'btn_settings_off'
+                text = await get_text_settings_name(True)
+            elif result.lower() == 'false':
+                btn_name.text = 'Вкл.'
+                btn_name.callback_data = 'btn_settings_on'
+                text = await get_text_settings_name(False)
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_name)
+    await callback.answer()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=ikb,
+                                     parse_mode='HTML')
+
+
+async def callback_settings_name_on(callback: types.CallbackQuery):
+    tg_chat_id = callback.from_user.id
+    btn_name_off = InlineKeyboardButton(text='Выкл.', callback_data='btn_settings_off')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_name_off)
+    await callback.answer('Изменения сохранены')
+    # await callback.message.edit_text(text=await get_text_settings_name(True),
+    #                                  reply_markup=ikb,
+    #                                  parse_mode='HTML')
+    data = {
+        "task_title_detail": True
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/", data=data) as resp:
+            response = await resp.text()
+    await callback.message.delete()
+
+
+async def callback_settings_name_off(callback: types.CallbackQuery):
+    tg_chat_id = callback.from_user.id
+    btn_name_on = InlineKeyboardButton(text='Вкл.', callback_data='btn_settings_on')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_name_on)
+    await callback.answer('Изменения сохранены')
+    data = {
+        "task_title_detail": False
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/", data=data) as resp:
+            response = await resp.text()
+    await callback.message.delete()
+    # await callback.message.edit_text(text=await get_text_settings_name(False),
+    #                                  reply_markup=ikb,
+    #                                  parse_mode='HTML')
 
 
 def register_handlers_client(dp: Dispatcher):
@@ -303,6 +385,7 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(add_task, commands=['add'], state=None)
     dp.register_message_handler(updates, commands=['updates'])
     dp.register_message_handler(list_tasks, commands=['list'])
+    dp.register_message_handler(settings, commands=['settings'])
     dp.register_message_handler(list_delete, commands=['delete'])
     dp.register_callback_query_handler(callback_type,
                                        lambda callback_query: callback_query.data.startswith('type_'),
@@ -316,5 +399,11 @@ def register_handlers_client(dp: Dispatcher):
     dp.register_message_handler(add_name_md, state=FSMClientAddTask.name_md)
     dp.register_message_handler(add_number, state=FSMClientAddTask.number)
     dp.register_message_handler(add_date, state=FSMClientAddTask.date)
+    dp.register_callback_query_handler(callback_settings_name,
+                                       lambda callback_query: callback_query.data == 'btn_settings_name')
+    dp.register_callback_query_handler(callback_settings_name_on,
+                                       lambda callback_query: callback_query.data == 'btn_settings_on')
+    dp.register_callback_query_handler(callback_settings_name_off,
+                                       lambda callback_query: callback_query.data == 'btn_settings_off')
     dp.register_callback_query_handler(callback_cansel, lambda callback_query: callback_query.data == 'btn_cansel',
                                        state='*')

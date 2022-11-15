@@ -1,7 +1,6 @@
 # import asyncio
 import asyncio
 import datetime
-
 from aiogram import executor
 from bot import dp
 from handlers import client, common
@@ -19,9 +18,11 @@ async def time():
 
 async def scheduler():
     schedule.every().day.at("08:00").do(updates)
-    schedule.every().day.at("11:00").do(updates)
+    schedule.every().day.at("10:00").do(updates)
+    schedule.every().day.at("12:00").do(updates)
     schedule.every().day.at("14:00").do(updates)
-    schedule.every().day.at("17:00").do(updates)
+    schedule.every().day.at("16:00").do(updates)
+    schedule.every().day.at("18:00").do(updates)
     schedule.every().day.at("20:00").do(updates)
     # schedule.every(15).minutes.do(time)
     while True:

@@ -32,3 +32,10 @@ btn_yes = InlineKeyboardButton(text='Да', callback_data='btn_confirm_yes')
 btn_no = InlineKeyboardButton(text='Нет', callback_data='btn_confirm_no')
 ikb_yes_no = InlineKeyboardMarkup(row_width=2)
 ikb_yes_no.add(btn_yes, btn_no)
+
+
+def ikb_settings():
+    btn_name = InlineKeyboardButton(text='Наименование', callback_data='btn_settings_name')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_name)
+    return ikb
