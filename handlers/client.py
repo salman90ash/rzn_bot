@@ -204,6 +204,8 @@ async def updates(message: types.Message):
             msgs = json.loads(answer)
             for msg in msgs:
                 chat_id = msg['chat_id']
+                taskdata_id = msg['taskdata_id']
+                print(taskdata_id)
                 title = msg['title']
                 task_type = msg['type']
                 notice = msg['notice']
@@ -221,6 +223,8 @@ async def updates(message: types.Message):
                                f"<i>{notice}</i>\n" \
                                f"<a href=\"{url}\">Посмотреть на сайте РЗН</a>"
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
+                async with session.get(f"http://{URL}/tg/tg_change_notice_1/{taskdata_id}/") as resp:
+                    answer = await resp.text()
 
 
 async def list_tasks(message: types.Message):
