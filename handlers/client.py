@@ -198,7 +198,7 @@ async def add_date(message: types.Message, state: FSMContext):
     await state.finish()
 
 
-async def updates():
+async def updates(_):
     # await bot.send_message(chat_id=ADMIN_ID, text='start_updates', parse_mode="HTML")
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://{URL}/tg/update_tasks/") as resp:
