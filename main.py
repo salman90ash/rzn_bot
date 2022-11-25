@@ -21,6 +21,7 @@ async def scheduler():
     schedule.every().day.at("10:00").do(updates)
     schedule.every().day.at("12:00").do(updates)
     schedule.every().day.at("14:00").do(updates)
+    schedule.every().day.at("15:40").do(updates)
     schedule.every().day.at("16:00").do(updates)
     schedule.every().day.at("17:00").do(updates)
     schedule.every().day.at("18:00").do(updates)
