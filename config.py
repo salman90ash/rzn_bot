@@ -4,8 +4,9 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
 BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-if os.environ.get('TELEGRAM_ADMIN_ID') is not None:
-    ADMIN_ID = int(os.environ.get('TELEGRAM_ADMIN_ID'))
+ADMIN_ID = int(os.environ.get('TELEGRAM_ADMIN_ID'))
+# if os.environ.get('TELEGRAM_ADMIN_ID') is not None:
+#     ADMIN_ID = int(os.environ.get('TELEGRAM_ADMIN_ID'))
 HOST = os.environ.get('HOST')
 PORT = os.environ.get('PORT')
 URL = ''

@@ -22,8 +22,11 @@ async def scheduler():
     schedule.every().day.at("12:00").do(updates)
     schedule.every().day.at("14:00").do(updates)
     schedule.every().day.at("16:00").do(updates)
+    schedule.every().day.at("17:00").do(updates)
     schedule.every().day.at("18:00").do(updates)
+    schedule.every().day.at("19:00").do(updates)
     schedule.every().day.at("20:00").do(updates)
+    schedule.every().day.at("21:00").do(updates)
     # schedule.every(15).minutes.do(time)
     while True:
         await schedule.run_pending()

@@ -2,7 +2,7 @@ import json
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import URL
+from config import URL, ADMIN_ID
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
@@ -14,6 +14,7 @@ from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks, generat
 # from users.models import CustomUser
 import asyncio
 import aiohttp
+
 
 
 class FSMClientAddTask(StatesGroup):
@@ -44,8 +45,9 @@ async def get_user(tg_chat_id):
 async def create_user(data):
     async with aiohttp.ClientSession() as session:
         async with session.post(f"http://{URL}/tg/create_user/", data=data) as resp:
+            pass
             # print(resp.status)
-            print(await resp.text())
+            # print(await resp.text())
 
 
 async def create_task(data):
@@ -115,7 +117,8 @@ async def start(message: types.Message):
     if res:
         await create_user(user)
     else:
-        print(res)
+        pass
+        # print(res)
     await message.answer(text=start_message, parse_mode='Markdown')
     await message.delete()
 
@@ -196,6 +199,7 @@ async def add_date(message: types.Message, state: FSMContext):
 
 
 async def updates(message: types.Message):
+    await bot.send_message(chat_id=ADMIN_ID, text='start_updates', parse_mode="HTML")
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://{URL}/tg/update_tasks/") as resp:
             answer = await resp.text()
@@ -225,6 +229,7 @@ async def updates(message: types.Message):
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
                 async with session.get(f"http://{URL}/tg/tg_change_notice_1/{taskdata_id}/") as resp:
                     answer = await resp.text()
+    await bot.send_message(chat_id=ADMIN_ID, text='end_updates', parse_mode="HTML")
 
 
 async def list_tasks(message: types.Message):
@@ -287,7 +292,7 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
     async with state.proxy() as data:
         data['confirm'] = confirm
         if confirm == 'yes':
-            print(confirm)
+            # print(confirm)
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"http://{URL}/tg/del_tasks/{data['task_id']}/") as resp:
                     answer = await resp.text()
