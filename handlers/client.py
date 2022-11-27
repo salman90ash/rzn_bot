@@ -229,7 +229,7 @@ async def updates(_):
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
                 async with session.get(f"http://{URL}/tg/tg_change_notice_1/{taskdata_id}/") as resp:
                     answer = await resp.text()
-    await bot.send_message(chat_id=ADMIN_ID, text='end_updates', parse_mode="HTML")
+        await bot.send_message(chat_id=ADMIN_ID, text='end_updates', parse_mode="HTML")
 
 
 async def list_tasks(message: types.Message):
