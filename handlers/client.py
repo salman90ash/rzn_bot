@@ -37,14 +37,14 @@ class FSMClientDelTask(StatesGroup):
 async def get_user(tg_chat_id):
     params = {'tg_chat_id': tg_chat_id}
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://{URL}/tg/users/" + str(tg_chat_id) + "/") as resp:
+        async with session.get(f"http://{URL}/users/" + str(tg_chat_id) + "/") as resp:
             # print(resp.status)
             return await resp.text()
 
 
 async def create_user(data):
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"http://{URL}/tg/create_user/", data=data) as resp:
+        async with session.post(f"http://{URL}/create_user/", data=data) as resp:
             pass
             # print(resp.status)
             # print(await resp.text())
@@ -52,7 +52,7 @@ async def create_user(data):
 
 async def create_task(data):
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"http://{URL}/tg/create_task/", data=data) as resp:
+        async with session.post(f"http://{URL}/create_task/", data=data) as resp:
             # print(resp.status)
             answer = await resp.text()
             # print(answer)
@@ -201,9 +201,9 @@ async def add_date(message: types.Message, state: FSMContext):
 async def updates(_):
     # await bot.send_message(chat_id=ADMIN_ID, text='start_updates', parse_mode="HTML")
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://{URL}/tg/update_tasks/") as resp:
+        async with session.get(f"http://{URL}/update_tasks/") as resp:
             answer = await resp.text()
-        async with session.get(f"http://{URL}/tg/tg_send_updates/") as resp:
+        async with session.get(f"http://{URL}/tg_send_updates/") as resp:
             answer = await resp.text()
             msgs = json.loads(answer)
             for msg in msgs:
@@ -227,14 +227,14 @@ async def updates(_):
                                f"<i>{notice}</i>\n" \
                                f"<a href=\"{url}\">Посмотреть на сайте РЗН</a>"
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
-                async with session.get(f"http://{URL}/tg/tg_change_notice_1/{taskdata_id}/") as resp:
+                async with session.get(f"http://{URL}/tg_change_notice_1/{taskdata_id}/") as resp:
                     answer = await resp.text()
         await bot.send_message(chat_id=ADMIN_ID, text='end_updates', parse_mode="HTML")
 
 
 async def list_tasks(message: types.Message):
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://{URL}/tg/list_tasks/{message.from_user.id}/") as resp:
+        async with session.get(f"http://{URL}/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
             # print(data)
@@ -248,7 +248,7 @@ async def list_tasks(message: types.Message):
 
 async def list_delete(message: types.Message, state: FSMContext):
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://{URL}/tg/list_tasks/{message.from_user.id}/") as resp:
+        async with session.get(f"http://{URL}/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
             ikb_task = generate_ikb_list_tasks_delete(data)
@@ -294,7 +294,7 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
         if confirm == 'yes':
             # print(confirm)
             async with aiohttp.ClientSession() as session:
-                async with session.get(f"http://{URL}/tg/del_tasks/{data['task_id']}/") as resp:
+                async with session.get(f"http://{URL}/del_tasks/{data['task_id']}/") as resp:
                     answer = await resp.text()
                     task = json.loads(answer)
                     await callback.message.edit_text(text=get_msg_delete_task(title=task['title'],
@@ -333,7 +333,7 @@ async def callback_settings_name(callback: types.CallbackQuery):
     tg_chat_id = callback.from_user.id
     text = ''
     async with aiohttp.ClientSession() as session:
-        async with session.get(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/") as resp:
+        async with session.get(f"http://{URL}/users/{tg_chat_id}/task_detail/") as resp:
             response = json.loads(await resp.text())
             result: str = response['task_title_detail']
             btn_name = InlineKeyboardButton(text='Вкл.', callback_data='btn_settings_on')
@@ -366,7 +366,7 @@ async def callback_settings_name_on(callback: types.CallbackQuery):
         "task_title_detail": True
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/", data=data) as resp:
+        async with session.post(f"http://{URL}/users/{tg_chat_id}/task_detail/", data=data) as resp:
             response = await resp.text()
     await callback.message.delete()
 
@@ -381,7 +381,7 @@ async def callback_settings_name_off(callback: types.CallbackQuery):
         "task_title_detail": False
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(f"http://{URL}/tg/users/{tg_chat_id}/task_detail/", data=data) as resp:
+        async with session.post(f"http://{URL}/users/{tg_chat_id}/task_detail/", data=data) as resp:
             response = await resp.text()
     await callback.message.delete()
     # await callback.message.edit_text(text=await get_text_settings_name(False),
