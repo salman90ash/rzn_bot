@@ -2,7 +2,7 @@ import json
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import URL, ADMIN_ID
+from config import URL, ADMIN_ID, types_sort
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
@@ -14,7 +14,6 @@ from keyboards.ikb import ikb_type, ikb_cansel, generate_ikb_list_tasks, generat
 # from users.models import CustomUser
 import asyncio
 import aiohttp
-
 
 
 class FSMClientAddTask(StatesGroup):
@@ -38,7 +37,6 @@ async def get_user(tg_chat_id):
     params = {'tg_chat_id': tg_chat_id}
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://{URL}/users/" + str(tg_chat_id) + "/") as resp:
-            # print(resp.status)
             return await resp.text()
 
 
@@ -46,16 +44,12 @@ async def create_user(data):
     async with aiohttp.ClientSession() as session:
         async with session.post(f"http://{URL}/create_user/", data=data) as resp:
             pass
-            # print(resp.status)
-            # print(await resp.text())
 
 
 async def create_task(data):
     async with aiohttp.ClientSession() as session:
         async with session.post(f"http://{URL}/create_task/", data=data) as resp:
-            # print(resp.status)
             answer = await resp.text()
-            # print(answer)
             return answer
 
 
@@ -75,8 +69,8 @@ def get_msg_create_task(type_id, name_md='???', number='???', date='???') -> str
     else:
         caption_message = f"✅ <b>Задача добавлена</b>\n\n"
     template_message = f"{caption_message}" \
-                       f"Тип: {type_title}\n" \
                        f"Наименование МИ: {name_md}\n" \
+                       f"Тип: {type_title}\n" \
                        f"{type_number_title}: {number}\n" \
                        f"Дата: {date}"
     return template_message
@@ -88,8 +82,8 @@ def get_msg_delete_task(type_id, type_title, title, number, date) -> str:
         type_number_title = 'Исх. номер'
     caption_message = f"❌ <b>Задача удалена</b>\n\n"
     template_message = f"{caption_message}" \
-                       f"Тип: {type_title}\n" \
                        f"Наименование МИ: {title}\n" \
+                       f"Тип: {type_title}\n" \
                        f"{type_number_title}: {number}\n" \
                        f"Дата: {date}"
     return template_message
@@ -118,7 +112,6 @@ async def start(message: types.Message):
         await create_user(user)
     else:
         pass
-        # print(res)
     await message.answer(text=start_message, parse_mode='Markdown')
     await message.delete()
 
@@ -191,10 +184,8 @@ async def add_date(message: types.Message, state: FSMContext):
                                                              date=data['date']),
                                     parse_mode='HTML')
     await FSMClientAddTask.next()
-    # print(data.as_dict())
     await message.delete()
     await create_task(data.as_dict())
-    # print(answer)
     await state.finish()
 
 
@@ -209,7 +200,6 @@ async def updates(_):
             for msg in msgs:
                 chat_id = msg['chat_id']
                 taskdata_id = msg['taskdata_id']
-                print(taskdata_id)
                 title = msg['title']
                 task_type = msg['type']
                 notice = msg['notice']
@@ -237,7 +227,6 @@ async def list_tasks(message: types.Message):
         async with session.get(f"http://{URL}/list_tasks/{message.from_user.id}/") as resp:
             answer = await resp.text()
             data = json.loads(answer)
-            # print(data)
             ikb_task = generate_ikb_list_tasks(data)
             amount_tasks = len(data)
             await message.answer(text=f"Список задач ({amount_tasks} шт.):",
@@ -292,7 +281,6 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
     async with state.proxy() as data:
         data['confirm'] = confirm
         if confirm == 'yes':
-            # print(confirm)
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"http://{URL}/del_tasks/{data['task_id']}/") as resp:
                     answer = await resp.text()
@@ -312,8 +300,10 @@ async def callback_confirm_delete(callback: types.CallbackQuery, state: FSMConte
 
 async def settings(message: types.Message):
     btn_name = InlineKeyboardButton(text='Наименование', callback_data='btn_settings_name')
+    btn_sort = InlineKeyboardButton(text='Сортировка списка задач', callback_data='btn_settings_sort')
     ikb = InlineKeyboardMarkup(row_width=2)
     ikb.add(btn_name)
+    ikb.add(btn_sort)
     await bot.send_message(chat_id=message.from_user.id,
                            text=f'⚙️ Настройки бота:\n',
                            parse_mode="HTML",
@@ -351,6 +341,56 @@ async def callback_settings_name(callback: types.CallbackQuery):
     await callback.message.edit_text(text=text,
                                      reply_markup=ikb,
                                      parse_mode='HTML')
+
+
+async def callback_settings_sort(callback: types.CallbackQuery):
+    text = ''
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"http://{URL}/users/{callback.from_user.id}/getSortInfo/") as resp:
+            response = json.loads(await resp.text())
+            type_sort = response['type_sort']
+            for obj in types_sort:
+                if obj[0] == type_sort:
+                    text = f'Используется сортировка {obj[1]}\n\nСменить сортировку:'
+    btn_sort_title = InlineKeyboardButton(text='По наименованию', callback_data='btn_setting_select_sort_title')
+    btn_sort_date = InlineKeyboardButton(text='По дате вх./исх.', callback_data='btn_setting_select_sort_date')
+    btn_sort_date_created = InlineKeyboardButton(text='По дате добавления в телеграмм-бот',
+                                                 callback_data='btn_setting_select_sort_date_created')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_sort_title)
+    ikb.add(btn_sort_date)
+    ikb.add(btn_sort_date_created)
+    await callback.answer()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=ikb,
+                                     parse_mode='HTML')
+
+
+async def callback_select_sort(callback: types.CallbackQuery):
+    type_sort = callback.data[24:]  # делаем срез после btn_setting_select_sort_
+    text = f'Выберите порядок сортировки'
+    btn_sort_title_asc = InlineKeyboardButton(text='В порядке возрастания', callback_data=f'btn_sort_confirm_{type_sort}_ASC')
+    btn_sort_title_desc = InlineKeyboardButton(text='В порядке убывания', callback_data=f'btn_sort_confirm_{type_sort}_DESC')
+    ikb = InlineKeyboardMarkup(row_width=2)
+    ikb.add(btn_sort_title_asc)
+    ikb.add(btn_sort_title_desc)
+    await callback.answer()
+    await callback.message.edit_text(text=text,
+                                     reply_markup=ikb,
+                                     parse_mode='HTML')
+
+
+async def btn_setting_sort_confirm(callback: types.CallbackQuery):
+    sort = callback.data[17:]
+    data = {
+        "type_sort": sort
+    }
+    async with aiohttp.ClientSession() as session:
+        await session.post(f"http://{URL}/users/{callback.from_user.id}/setSort/", data=data)
+        # async with session.post(f"http://{URL}/users/{callback.from_user.id}/setSort/", data=data) as resp:
+        #     response = await resp.text()
+    await callback.answer('Изменения сохранены')
+    await callback.message.delete()
 
 
 async def callback_settings_name_on(callback: types.CallbackQuery):
@@ -414,5 +454,11 @@ def register_handlers_client(dp: Dispatcher):
                                        lambda callback_query: callback_query.data == 'btn_settings_on')
     dp.register_callback_query_handler(callback_settings_name_off,
                                        lambda callback_query: callback_query.data == 'btn_settings_off')
+    dp.register_callback_query_handler(callback_settings_sort,
+                                       lambda callback_query: callback_query.data == 'btn_settings_sort')
+    dp.register_callback_query_handler(callback_select_sort,
+                                       lambda callback_query: callback_query.data.startswith('btn_setting_select_sort'))
+    dp.register_callback_query_handler(btn_setting_sort_confirm,
+                                       lambda callback_query: callback_query.data.startswith('btn_sort_confirm_'))
     dp.register_callback_query_handler(callback_cansel, lambda callback_query: callback_query.data == 'btn_cansel',
                                        state='*')
