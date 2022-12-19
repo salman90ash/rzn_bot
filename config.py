@@ -10,6 +10,7 @@ ADMIN_ID = int(os.environ.get('TELEGRAM_ADMIN_ID'))
 HOST = os.environ.get('HOST')
 PORT = os.environ.get('PORT')
 API_TG_TOKEN = os.environ.get('API_TG_TOKEN')
+TG_CHAT_LOG = os.environ.get('TG_CHAT_LOG')
 URL = ''
 API = f'/tg/api/v1/{API_TG_TOKEN}'
 

@@ -2,7 +2,7 @@ import json
 
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-from config import URL, ADMIN_ID, types_sort
+from config import URL, ADMIN_ID, TG_CHAT_LOG, types_sort
 from shortcut import get_type_title
 from bot import bot
 from aiogram import types, Dispatcher
@@ -183,6 +183,13 @@ async def add_date(message: types.Message, state: FSMContext):
                                                              number=data['number'],
                                                              date=data['date']),
                                     parse_mode='HTML')
+        await bot.send_message(message_id=data['message_id'],
+                               chat_id=TG_CHAT_LOG,
+                               text=get_msg_create_task(type_id=data['type'],
+                                                        name_md=data['name_md'],
+                                                        number=data['number'],
+                                                        date=data['date']),
+                               parse_mode='HTML')
     await FSMClientAddTask.next()
     await message.delete()
     await create_task(data.as_dict())
@@ -219,7 +226,7 @@ async def updates(_):
                     await bot.send_message(chat_id=chat_id, text=msg_text, parse_mode="HTML")
                 async with session.get(f"http://{URL}/tg_change_notice_1/{taskdata_id}/") as resp:
                     answer = await resp.text()
-        await bot.send_message(chat_id=ADMIN_ID, text='end_updates', parse_mode="HTML")
+        await bot.send_message(chat_id=TG_CHAT_LOG, text='end_updates', parse_mode="HTML")
 
 
 async def list_tasks(message: types.Message):
@@ -369,8 +376,10 @@ async def callback_settings_sort(callback: types.CallbackQuery):
 async def callback_select_sort(callback: types.CallbackQuery):
     type_sort = callback.data[24:]  # делаем срез после btn_setting_select_sort_
     text = f'Выберите порядок сортировки'
-    btn_sort_title_asc = InlineKeyboardButton(text='В порядке возрастания', callback_data=f'btn_sort_confirm_{type_sort}_ASC')
-    btn_sort_title_desc = InlineKeyboardButton(text='В порядке убывания', callback_data=f'btn_sort_confirm_{type_sort}_DESC')
+    btn_sort_title_asc = InlineKeyboardButton(text='В порядке возрастания',
+                                              callback_data=f'btn_sort_confirm_{type_sort}_ASC')
+    btn_sort_title_desc = InlineKeyboardButton(text='В порядке убывания',
+                                               callback_data=f'btn_sort_confirm_{type_sort}_DESC')
     ikb = InlineKeyboardMarkup(row_width=2)
     ikb.add(btn_sort_title_asc)
     ikb.add(btn_sort_title_desc)

@@ -5,7 +5,7 @@ from aiogram import executor
 from bot import dp
 from handlers import client, common
 import aioschedule as schedule
-from handlers.common import send_msg
+# from handlers.common import send_msg
 from handlers.client import updates
 
 client.register_handlers_client(dp)
